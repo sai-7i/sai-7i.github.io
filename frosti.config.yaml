@@ -1,9 +1,9 @@
 # 网站的基本信息
 site:
-  tab: Frosti # 浏览器标签栏上显示的文本
-  title: 💠 Frosti # 网站的标题
+  tab: SSSec700 # 浏览器标签栏上显示的文本
+  title: 💠 hyk's blog # 网站的标题
   description: A clean, elegant, and fast static blog template! 🚀 Developed with Astro # 网站的描述，用于SEO等
-  language: en # 网站的语言，例如 "en" 是英文
+  language: zh # 网站的语言，例如 "en" 是英文
   favicon: /favicon.ico # 网站的图标，用于浏览器标签栏和其他地方显示
   theme: # 更多主题 https://daisyui.com/docs/themes/；此处修改后构建时会自动同步到 daisyUI
     light: winter # 主题的浅色模式
@@ -63,8 +63,8 @@ site:
 
 # 用户的个人信息
 user:
-  name: EveSunMaple # 用户名
-  site: "https://frosti.saroprock.com" # 用户的网站链接
+  name: sai-7i # 用户名
+  site: "https://sai-7i.github.io" # 用户的网站链接
   avatar: /profile.png # 用户头像路径
   sidebar: # 侧边栏配置
     social:
