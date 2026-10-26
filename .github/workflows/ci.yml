@@ -1,30 +1,47 @@
-```yaml
-   name: Deploy (branch)
-   on:
-     push:
-       branches: [master]
-     workflow_dispatch:
+name: CI
 
-   permissions:
-     contents: write
+on:
+  push:
+    branches: [master]
+  pull_request:
 
-   jobs:
-     publish:
-       runs-on: ubuntu-latest
-       steps:
-         - uses: actions/checkout@v4
-         - uses: pnpm/action-setup@v4
-           with: { version: 11.8.0 }
-         - uses: actions/setup-node@v4
-           with: { node-version: 22, cache: pnpm }
-         - run: pnpm install --frozen-lockfile
-         - run: pnpm exec astro build
-         - run: pnpm exec pagefind --site dist
-         - run: touch dist/.nojekyll
-         - uses: peaceiris/actions-gh-pages@v4
-           with:
-             github_token: ${{ secrets.GITHUB_TOKEN }}
-             publish_branch: gh-pages
-             publish_dir: ./dist
-             force_orphan: true      # 每次只留一个提交
- ```
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
+        with:
+          version: 11.8.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+      - name: Astro typecheck
+        run: pnpm astro-check
+
+      - name: Biome check (lint + formatting) on src
+        run: pnpm biome:check
+
+      - name: Production build
+        run: pnpm build
