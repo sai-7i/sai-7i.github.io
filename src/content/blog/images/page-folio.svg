@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="430" viewBox="0 0 1100 430">
+<rect width="1100" height="430" rx="24" fill="#f7f8fa"/>
+<text x="550" y="48" font-family="sans-serif" font-size="28" text-anchor="middle" fill="#202938" font-weight="700">page 与 folio 的关系</text>
+<rect x="75" y="105" width="250" height="235" rx="16" fill="#e7eefb" stroke="#6d8fc7" stroke-width="2"/>
+<text x="200" y="145" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#23395d" font-weight="700">一个基础页</text>
+<rect x="105" y="175" width="190" height="115" rx="10" fill="#fff" stroke="#6d8fc7" stroke-width="2"/>
+<text x="200" y="220" font-family="sans-serif" font-size="21" text-anchor="middle" fill="#23395d">物理内存</text>
+<text x="200" y="252" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#23395d">常见为 4 KB</text>
+<text x="200" y="315" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#23395d">page 描述符</text>
+<path d="M355 220 H430" stroke="#697586" stroke-width="3" fill="none"/><path d="M418 208 L432 220 L418 232" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="465" y="105" width="560" height="235" rx="16" fill="#e7f5ed" stroke="#63a681" stroke-width="2"/>
+<text x="745" y="145" font-family="sans-serif" font-size="24" text-anchor="middle" fill="#20563a" font-weight="700">folio：统一表示一个或多个页</text>
+<g fill="#fff" stroke="#63a681" stroke-width="2">
+<rect x="505" y="180" width="105" height="95" rx="8"/><rect x="620" y="180" width="105" height="95" rx="8"/><rect x="735" y="180" width="105" height="95" rx="8"/><rect x="850" y="180" width="105" height="95" rx="8"/>
+</g>
+<g font-family="sans-serif" font-size="18" text-anchor="middle" fill="#20563a"><text x="557" y="232">page</text><text x="672" y="232">page</text><text x="787" y="232">page</text><text x="902" y="232">page</text></g>
+<text x="745" y="315" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#20563a">示意：一个 folio 可以覆盖多个连续页</text>
+</svg>

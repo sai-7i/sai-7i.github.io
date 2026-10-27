@@ -1,16 +1,20 @@
 ---
-import { Code } from "astro-expressive-code/components";
 import { Icon } from "astro-icon/components";
 import MainCard from "@/components/MainCard.astro";
 import FeatureCard from "@/components/mdx/FeatureCard.astro";
 import GitHubStats from "@/components/mdx/GitHubStats.astro";
+import PostCard from "@/components/PostCard.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getAllPosts, getPostsWithStats, sortPostsByPinAndDate } from "@utils/blogUtils";
+
+const sortedPosts = sortPostsByPinAndDate(await getAllPosts());
+const latestPosts = (await getPostsWithStats(sortedPosts)).slice(0, 3);
 ---
 
 <BaseLayout title="Home">
   <MainCard
-    title="Welcome to Frosti"
-    description="A modern, responsive, feature-rich blog theme for Astro with dark/light mode and customizable options."
+    title="hyk's blog"
+    description="二进制安全、CTF 与工程踩坑笔记。"
     textOverlay="HOME"
     infoIcon="lucide:info"
   >
@@ -21,140 +25,107 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           <h2
             class="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-loose"
           >
-            🌟 Frosti Blog Theme
+            👋 你好，我是 hyk
           </h2>
           <p class="text-xl text-base-content/80 max-w-3xl mb-8">
-            A minimal, responsive, and feature-rich Astro blog theme designed for creators who value beautiful content
-            presentation and exceptional performance.
+            二进制安全爱好者：CTF pwn、逆向分析、漏洞利用，也写点提高效率的小工具。这里是我的做题笔记与踩坑记录。
           </p>
           <div class="flex flex-wrap gap-4 justify-center">
             <a href="/blog" class="btn btn-primary gap-2 btn-shine-effect">
               <Icon name="lucide:book-open" class="w-5 h-5" />
-              <span>Explore Blog</span>
+              <span>阅读博客</span>
             </a>
-            <a href="https://github.com/EveSunMaple/Frosti" target="_blank" rel="noopener noreferrer" class="btn btn-outline gap-2">
+            <a href="https://github.com/sai-7i" target="_blank" rel="noopener noreferrer" class="btn btn-outline gap-2">
               <Icon name="lucide:github" class="w-5 h-5" />
-              <span>Star on GitHub</span>
+              <span>GitHub</span>
             </a>
           </div>
         </div>
       </section>
 
-      <!-- Features Section -->
+      <!-- What I Do -->
       <section class="py-6">
         <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
           <Icon name="lucide:sparkles" class="w-6 h-6 text-primary" />
-          <span>Features</span>
+          <span>我在做什么</span>
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <FeatureCard
-            title="Responsive Design"
-            description="Fully responsive design that looks great on all devices from mobile to desktop."
-            icon="lucide:smartphone"
+            title="CTF Pwn"
+            description="栈溢出、堆利用、ROP 链，glibc 版本差异与比赛复盘。"
+            icon="lucide:bug"
             color="oklch(0.7 0.2 30)"
           />
 
           <FeatureCard
-            title="Dark/Light Mode"
-            description="Toggle between light and dark themes with a beautiful transition effect."
-            icon="lucide:moon"
+            title="逆向分析"
+            description="IDA / Ghidra 静态分析，还原混淆逻辑与自定义虚拟机。"
+            icon="lucide:binary"
             color="oklch(0.65 0.2 280)"
           />
 
           <FeatureCard
-            title="MDX Support"
-            description="Write your content in MDX with full support for custom components and JSX."
-            icon="lucide:file-code"
+            title="Web 安全"
+            description="越权、注入、SSRF 一类的实战记录，以及白盒代码审计。"
+            icon="lucide:globe"
             color="oklch(0.6 0.2 160)"
           />
 
           <FeatureCard
-            title="SEO Optimized"
-            description="Built-in SEO optimization with meta tags, OpenGraph, and JSON-LD."
-            icon="lucide:search"
+            title="工具与脚本"
+            description="用 pwntools 和 Python 把重复劳动写掉，能自动化就自动化。"
+            icon="lucide:wrench"
             color="oklch(0.6 0.2 200)"
           />
 
           <FeatureCard
-            title="Fast Performance"
-            description="Optimized for speed with lazy loading, code splitting, and minimal JavaScript."
-            icon="lucide:zap"
+            title="工程实践"
+            description="Astro / Vue / FastAPI 搭小项目，顺手记录踩过的坑。"
+            icon="lucide:boxes"
             color="oklch(0.8 0.2 80)"
           />
 
           <FeatureCard
-            title="Customizable"
-            description="Easily customize the theme to match your personal brand and preferences."
-            icon="lucide:palette"
+            title="学习记录"
+            description="一次只学一个可验证的小单元，学完就写下来。"
+            icon="lucide:book-open"
             color="oklch(0.7 0.2 10)"
           />
         </div>
       </section>
 
-      <!-- Quick Start -->
+      <!-- Latest Posts -->
       <section class="py-6">
-        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-          <Icon name="lucide:rocket" class="w-6 h-6 text-primary" />
-          <span>Quick Start</span>
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 class="text-2xl font-bold flex items-center gap-2">
+            <Icon name="lucide:notebook-pen" class="w-6 h-6 text-primary" />
+            <span>最新文章</span>
+          </h2>
+          <a href="/blog" class="btn btn-sm btn-outline gap-2">
+            <span>全部文章</span>
+            <Icon name="lucide:external-link" class="w-4 h-4" />
+          </a>
+        </div>
 
-        <div class="card bg-base-200 p-6">
-          <h3 class="text-xl font-bold mb-4">Get started in three simple steps:</h3>
-
-          <ol class="space-y-6 mb-6">
-            <li class="relative flex flex-col gap-4 items-start">
-              <div class="flex gap-4 items-center">
-                <div
-                  class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content flex-shrink-0"
-                >
-                  1
-                </div>
-                <h4 class="font-bold">Clone the repository</h4>
-              </div>
-              <div class="relative w-full">
-                <p class="text-base-content/70 mb-2">Use Git to clone the Frosti repository to your local machine:</p>
-                <Code code="git clone --depth 1 https://github.com/EveSunMaple/Frosti.git Frosti" lang="sh" />
-              </div>
-            </li>
-
-            <li class="relative flex flex-col gap-4 items-start">
-              <div class="flex gap-4 items-center">
-                <div
-                  class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content flex-shrink-0"
-                >
-                  2
-                </div>
-                <h4 class="font-bold">Install dependencies</h4>
-              </div>
-              <div class="relative w-full">
-                <p class="text-base-content/70 mb-2">Navigate to the project directory and install dependencies:</p>
-                <Code code="cd Frosti && pnpm install" lang="sh" />
-              </div>
-            </li>
-
-            <li class="relative flex flex-col gap-4 items-start">
-              <div class="flex gap-4 items-center">
-                <div
-                  class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content flex-shrink-0"
-                >
-                  3
-                </div>
-                <h4 class="font-bold">Start the development server</h4>
-              </div>
-              <div class="relative w-full">
-                <p class="text-base-content/70 mb-2">Launch the local development server to see your blog:</p>
-                <Code code="pnpm run search:index && pnpm run dev" lang="sh" />
-              </div>
-            </li>
-          </ol>
-
-          <div class="alert bg-primary/10 text-primary mb-0">
-            <Icon name="lucide:lightbulb" class="w-6 h-6" />
-            <span
-              >Check out the <a href="/blog" class="underline">blog section</a> for detailed guides and documentation.</span
-            >
-          </div>
+        <div class="flex flex-col gap-6">
+          {
+            latestPosts.map((post, index) => (
+              <PostCard
+                priority={index === 0}
+                title={post.data.title}
+                image={post.data.image}
+                description={post.data.description}
+                url={"/blog/" + post.id}
+                pubDate={post.data.pubDate}
+                badge={post.data.badge}
+                categories={post.data.categories}
+                tags={post.data.tags}
+                word={post.remarkPluginFrontmatter.totalCharCount}
+                time={post.remarkPluginFrontmatter.readingTime}
+              />
+            ))
+          }
         </div>
       </section>
 
@@ -162,10 +133,10 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
       <section class="py-6">
         <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
           <Icon name="lucide:github" class="w-6 h-6 text-primary" />
-          <span>Repository Stats</span>
+          <span>GitHub 数据</span>
         </h2>
 
-        <GitHubStats username="EveSunMaple" repositoryName="Frosti" />
+        <GitHubStats username="sai-7i" />
       </section>
     </div>
   </MainCard>

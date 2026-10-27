@@ -1,6 +1,6 @@
 # 网站的基本信息
 site:
-  tab: SSSec700 # 浏览器标签栏上显示的文本
+  tab: hyk's blog # 浏览器标签栏上显示的文本
   title: 💠 hyk's blog # 网站的标题
   description: 如梦令 # 网站的描述，用于SEO等
   language: zh # 网站的语言，例如 "en" 是英文
@@ -14,7 +14,7 @@ site:
     pageSize: 8 # 每页显示的文章数量
   menu: # 菜单配置
     - id: home # 菜单项的唯一标识符
-      text:  # 菜单项显示的文本
+      text: Home  # 菜单项显示的文本
       href: / # 菜单项链接的地址
       svg: "material-symbols:home-outline-rounded"
       target: _self
@@ -39,6 +39,11 @@ site:
           href: /blog/category/Pwn
           svg: "material-symbols:terminal-rounded"
           target: _self
+        - id: kernel
+          text: Kernel
+          href: /blog/category/Kernel
+          svg: "material-symbols:memory"
+          target: _self
         - id: tags
           text: Tags
           href: /blog/tags
@@ -57,7 +62,7 @@ site:
       target: _self
     - id: contact
       text: Contact
-      href: "mailto:contact.evesunmaple@outlook.com"
+      href: "https://github.com/sai-7i"
       target: _self
       svg: "material-symbols:attach-email-outline-rounded"
 
@@ -67,6 +72,18 @@ user:
   site: "https://sai-7i.github.io" # 用户的网站链接
   avatar: /profile.png # 用户头像路径
   sidebar: # 侧边栏配置
-    social:
-  footer:
-    social:
+    social: # 社交链接列表，留空则不显示
+      - href: "https://github.com/sai-7i"
+        ariaLabel: Github
+        title: Github
+        svg: "ri:github-line"
+  footer: # 页脚配置
+    social: # 页脚社交链接列表，留空则不显示
+      - href: "https://github.com/sai-7i"
+        ariaLabel: Github
+        title: Github
+        svg: "ri:github-line"
+      - href: "https://sai-7i.github.io/rss.xml"
+        ariaLabel: RSS
+        title: RSS Feed
+        svg: "ri:rss-line"

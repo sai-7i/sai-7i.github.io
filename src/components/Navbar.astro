@@ -62,7 +62,7 @@ const typedMenu = SITE_MENU as MenuItem[];
             {item.subItems ? (
               <details open={currentPath.startsWith(item.href)}>
                 <summary class="flex items-center text-lg font-bold p-3 hover:bg-base-200 rounded-lg">
-                  <Icon name={item.svg} class="w-5 h-5 mr-2" />
+                  {item.svg && <Icon name={item.svg} class="w-5 h-5 mr-2" />}
                   <span>{item.text}</span>
                 </summary>
                 <ul class="pl-4">
@@ -77,7 +77,7 @@ const typedMenu = SITE_MENU as MenuItem[];
                         href={subItem.href}
                         target={subItem.target || "_self"}
                       >
-                        <Icon name={subItem.svg} class="w-4 h-4 mr-2" />
+                        {subItem.svg && <Icon name={subItem.svg} class="w-4 h-4 mr-2" />}
                         <span>{subItem.text}</span>
                       </a>
                     </li>
@@ -94,7 +94,7 @@ const typedMenu = SITE_MENU as MenuItem[];
                 href={item.href}
                 target={item.target || "_self"}
               >
-                <Icon name={item.svg} class="w-5 h-5 mr-2" />
+                {item.svg && <Icon name={item.svg} class="w-5 h-5 mr-2" />}
                 <span>{item.text}</span>
               </a>
             )}

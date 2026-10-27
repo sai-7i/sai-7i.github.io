@@ -7,9 +7,6 @@ categories:
   - Pwn
 tags:
   - pwn
-  - rop
-  - stack-overflow
-  - pwntools
 badge: Pin
 ---
 

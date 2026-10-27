@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570">
+<rect width="1200" height="570" rx="24" fill="#f7f8fa"/>
+<text x="600" y="48" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#202938" font-weight="700">常见 kmalloc size class（示意）</text>
+<text x="600" y="82" font-family="sans-serif" font-size="17" text-anchor="middle" fill="#667085">请求大小向上匹配到合适的缓存；实际可用类别取决于架构与配置</text>
+<g font-family="sans-serif" font-size="18" text-anchor="middle">
+<g fill="#e7eefb" stroke="#6d8fc7" stroke-width="2">
+<rect x="60" y="125" width="130" height="72" rx="10"/><rect x="205" y="125" width="130" height="72" rx="10"/><rect x="350" y="125" width="130" height="72" rx="10"/><rect x="495" y="125" width="130" height="72" rx="10"/>
+</g>
+<g fill="#23395d"><text x="125" y="155">kmalloc-8</text><text x="125" y="180">8 B</text><text x="270" y="155">kmalloc-16</text><text x="270" y="180">16 B</text><text x="415" y="155">kmalloc-32</text><text x="415" y="180">32 B</text><text x="560" y="155">kmalloc-64</text><text x="560" y="180">64 B</text></g>
+<g fill="#e7f5ed" stroke="#63a681" stroke-width="2"><rect x="640" y="125" width="130" height="72" rx="10"/><rect x="785" y="125" width="130" height="72" rx="10"/><rect x="930" y="125" width="130" height="72" rx="10"/></g>
+<g fill="#20563a"><text x="705" y="155">kmalloc-96</text><text x="705" y="180">96 B</text><text x="850" y="155">kmalloc-128</text><text x="850" y="180">128 B</text><text x="995" y="155">kmalloc-192</text><text x="995" y="180">192 B</text></g>
+<path d="M600 230 V270" stroke="#697586" stroke-width="3"/><path d="M588 258 L600 272 L612 258" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="125" y="285" width="950" height="95" rx="14" fill="#fff0dc" stroke="#d7a15a" stroke-width="2"/>
+<text x="600" y="322" font-size="23" fill="#714b18" font-weight="700">请求 80 字节 → kmalloc-96</text>
+<text x="600" y="353" font-size="18" fill="#714b18">请求 97 字节 → kmalloc-128（不是 kmalloc-96）</text>
+<text x="600" y="425" font-size="18" fill="#475467">非 2 的幂大小类别（如 96、192）可减少部分内部碎片</text>
+<text x="600" y="460" font-size="18" fill="#475467">更大的请求继续匹配更大的缓存；超过 slab kmalloc 缓存范围时，可能走页分配路径</text>
+<text x="600" y="515" font-size="16" fill="#667085">这是常见配置下的示意，不应替代目标内核的 kmalloc_size_index 与配置检查</text>
+</g>
+</svg>

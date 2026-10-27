@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" rx="24" fill="#f7f8fa"/>
+<text x="600" y="48" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#202938" font-weight="700">结构体如何进入 kmem_cache？</text>
+<rect x="390" y="85" width="420" height="75" rx="14" fill="#e7eefb" stroke="#6d8fc7" stroke-width="2"/>
+<text x="600" y="116" font-family="sans-serif" font-size="22" text-anchor="middle" fill="#23395d" font-weight="700">申请内存</text><text x="600" y="143" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#23395d">kmalloc(size) 或专用 kmem_cache_alloc()</text>
+<path d="M600 160 V198 H300 V228 M600 198 V228 M600 198 H900 V228" stroke="#697586" stroke-width="3" fill="none"/>
+<g fill="#fff" stroke="#aab2bd" stroke-width="2">
+<rect x="90" y="230" width="420" height="100" rx="14"/><rect x="520" y="230" width="330" height="100" rx="14"/><rect x="860" y="230" width="250" height="100" rx="14"/>
+</g>
+<g font-family="sans-serif" text-anchor="middle">
+<text x="300" y="266" font-size="22" fill="#202938" font-weight="700">kmalloc(size)</text><text x="300" y="297" font-size="18" fill="#475467">按大小选择通用 size class</text>
+<text x="685" y="266" font-size="22" fill="#202938" font-weight="700">专用 cache</text><text x="685" y="297" font-size="18" fill="#475467">例如 dentry / task_struct</text>
+<text x="985" y="266" font-size="22" fill="#202938" font-weight="700">大块请求</text><text x="985" y="297" font-size="18" fill="#475467">可能走页分配路径</text>
+</g>
+<path d="M300 330 V365 M685 330 V365 M985 330 V365" stroke="#697586" stroke-width="3"/>
+<g fill="#e7f5ed" stroke="#63a681" stroke-width="2"><rect x="100" y="365" width="400" height="90" rx="14"/><rect x="530" y="365" width="310" height="90" rx="14"/><rect x="865" y="365" width="240" height="90" rx="14"/></g>
+<g font-family="sans-serif" text-anchor="middle" fill="#20563a"><text x="300" y="400" font-size="22" font-weight="700">kmalloc-8 … kmalloc-192 …</text><text x="300" y="430" font-size="18">通用大小类别</text><text x="685" y="400" font-size="22" font-weight="700">对象专用缓存</text><text x="685" y="430" font-size="18">按类型组织对象</text><text x="985" y="400" font-size="22" font-weight="700">Buddy / pages</text><text x="985" y="430" font-size="18">不一定进入小对象 slab</text></g>
+<text x="600" y="510" font-family="sans-serif" font-size="19" text-anchor="middle" fill="#475467">结构体名不会自动决定 kmalloc-XX；分配调用和请求大小才是关键</text>
+<text x="600" y="543" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#667085">缓存合并、架构对齐、调试配置和内存控制配置都可能影响最终结果</text>
+</svg>

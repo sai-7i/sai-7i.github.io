@@ -36,8 +36,9 @@ export const USER_SITE = config.user.site;
 export const USER_AVATAR = config.user.avatar;
 
 // 社交图标配置（侧边栏和页脚）
-export const USER_SIDEBAR_SOCIAL_ICONS = config.user.sidebar.social;
-export const USER_FOOTER_SOCIAL_ICONS = config.user.footer.social;
+// YAML 里留空会被解析成 null，这里兜底成空数组，避免组件里 .map 崩溃
+export const USER_SIDEBAR_SOCIAL_ICONS = config.user.sidebar?.social ?? [];
+export const USER_FOOTER_SOCIAL_ICONS = config.user.footer?.social ?? [];
 
 // 网站菜单项配置
 export const SITE_MENU = config.site.menu;

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<rect width="1200" height="600" rx="24" fill="#f7f8fa"/>
+<text x="600" y="48" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#202938" font-weight="700">System V 消息：msg_msg 与 msg_msgseg</text>
+<text x="600" y="82" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#667085">示意布局；具体大小由目标架构、结构体布局和消息长度决定</text>
+<rect x="70" y="125" width="1060" height="150" rx="14" fill="#e7eefb" stroke="#6d8fc7" stroke-width="2"/>
+<text x="600" y="155" font-family="sans-serif" font-size="22" text-anchor="middle" fill="#23395d" font-weight="700">首段分配：struct msg_msg + 一部分消息正文</text>
+<g stroke="#6d8fc7" stroke-width="2" fill="#fff">
+<rect x="100" y="180" width="170" height="65" rx="8"/><rect x="280" y="180" width="150" height="65" rx="8"/><rect x="440" y="180" width="150" height="65" rx="8"/><rect x="600" y="180" width="150" height="65" rx="8"/><rect x="760" y="180" width="330" height="65" rx="8"/>
+</g>
+<g font-family="sans-serif" font-size="17" text-anchor="middle" fill="#23395d"><text x="185" y="207">m_list</text><text x="185" y="229">链表节点</text><text x="355" y="207">m_type / m_ts</text><text x="515" y="207">next</text><text x="675" y="207">security</text><text x="925" y="207">正文 payload</text></g>
+<path d="M925 245 V300 H320 V340" stroke="#697586" stroke-width="3" fill="none"/><path d="M308 328 L320 342 L332 328" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="70" y="350" width="1060" height="140" rx="14" fill="#e7f5ed" stroke="#63a681" stroke-width="2"/>
+<text x="600" y="382" font-family="sans-serif" font-size="22" text-anchor="middle" fill="#20563a" font-weight="700">超出首段容量：通过 msg_msgseg 继续存储</text>
+<g fill="#fff" stroke="#63a681" stroke-width="2"><rect x="110" y="405" width="250" height="55" rx="8"/><rect x="390" y="405" width="250" height="55" rx="8"/><rect x="670" y="405" width="250" height="55" rx="8"/></g>
+<g font-family="sans-serif" font-size="18" text-anchor="middle" fill="#20563a"><text x="235" y="438">msg_msgseg + 正文</text><text x="515" y="438">msg_msgseg + 正文</text><text x="795" y="438">msg_msgseg + 正文</text></g>
+<path d="M360 432 H390 M640 432 H670" stroke="#63a681" stroke-width="3"/>
+<text x="600" y="530" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#475467">首段和后续段都通过动态分配获得内存，大小不同，可能进入不同 size class</text>
+<text x="600" y="560" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#667085">不要把 msg_msg 等同于固定的 kmalloc-96：它取决于实际申请的总字节数</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="570" viewBox="0 0 1100 570">
+<rect width="1100" height="570" rx="24" fill="#f7f8fa"/>
+<text x="550" y="48" font-family="sans-serif" font-size="28" text-anchor="middle" fill="#202938" font-weight="700">新版 SLUB：sheaf 与 barn</text>
+<rect x="65" y="100" width="300" height="180" rx="16" fill="#e7eefb" stroke="#6d8fc7" stroke-width="2"/>
+<text x="215" y="137" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#23395d" font-weight="700">CPU 本地 sheaf</text>
+<g fill="#fff" stroke="#6d8fc7" stroke-width="2">
+<rect x="95" y="165" width="70" height="55" rx="8"/><rect x="175" y="165" width="70" height="55" rx="8"/><rect x="255" y="165" width="70" height="55" rx="8"/>
+</g>
+<g font-family="sans-serif" font-size="17" text-anchor="middle" fill="#23395d"><text x="130" y="198">obj</text><text x="210" y="198">obj</text><text x="290" y="198">obj</text></g>
+<text x="215" y="252" font-family="sans-serif" font-size="17" text-anchor="middle" fill="#23395d">优先服务本地分配</text>
+<path d="M365 188 H440" stroke="#697586" stroke-width="3"/><path d="M428 176 L442 188 L428 200" stroke="#697586" stroke-width="3" fill="none"/><path d="M440 232 H365" stroke="#697586" stroke-width="3"/><path d="M377 220 L363 232 L377 244" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="450" y="100" width="290" height="180" rx="16" fill="#e7f5ed" stroke="#63a681" stroke-width="2"/>
+<text x="595" y="137" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#20563a" font-weight="700">节点级 barn</text>
+<rect x="485" y="160" width="220" height="42" rx="8" fill="#fff" stroke="#63a681" stroke-width="2"/>
+<rect x="485" y="212" width="220" height="42" rx="8" fill="#fff" stroke="#63a681" stroke-width="2"/>
+<text x="595" y="187" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#20563a">full sheaves</text>
+<text x="595" y="239" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#20563a">empty sheaves</text>
+<path d="M740 188 H815" stroke="#697586" stroke-width="3"/><path d="M803 176 L817 188 L803 200" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="825" y="100" width="210" height="180" rx="16" fill="#fff0dc" stroke="#d7a15a" stroke-width="2"/>
+<text x="930" y="137" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#714b18" font-weight="700">slab</text>
+<g fill="#fff" stroke="#d7a15a" stroke-width="2"><rect x="850" y="160" width="45" height="55" rx="6"/><rect x="902" y="160" width="45" height="55" rx="6"/><rect x="954" y="160" width="45" height="55" rx="6"/></g>
+<text x="930" y="247" font-family="sans-serif" font-size="17" text-anchor="middle" fill="#714b18">实际对象所在</text>
+<path d="M550 310 V352" stroke="#697586" stroke-width="3"/><path d="M538 340 L550 354 L562 340" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="175" y="360" width="750" height="125" rx="16" fill="#fff" stroke="#aab2bd" stroke-width="2"/>
+<text x="550" y="398" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#202938" font-weight="700">分配 / 释放的基本思路</text>
+<text x="550" y="433" font-family="sans-serif" font-size="19" text-anchor="middle" fill="#475467">优先使用本地缓存；不足时再与共享缓存、底层 slab 协调</text>
+<text x="550" y="462" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#667085">逻辑示意图：实际路径取决于内核版本与配置</text>
+</svg>

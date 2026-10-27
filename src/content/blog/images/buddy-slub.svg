@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520">
+<rect width="1100" height="520" rx="24" fill="#f7f8fa"/>
+<text x="550" y="48" font-family="sans-serif" font-size="28" text-anchor="middle" fill="#202938" font-weight="700">从 Buddy 到 SLUB 对象</text>
+<rect x="390" y="78" width="320" height="65" rx="14" fill="#e7eefb" stroke="#6d8fc7" stroke-width="2"/>
+<text x="550" y="119" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#23395d" font-weight="700">Buddy：分配物理页</text>
+<path d="M550 143 V178" stroke="#697586" stroke-width="3"/><path d="M538 166 L550 180 L562 166" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="300" y="183" width="500" height="70" rx="14" fill="#fff0dc" stroke="#d7a15a" stroke-width="2"/>
+<text x="550" y="226" font-family="sans-serif" font-size="23" text-anchor="middle" fill="#714b18" font-weight="700">slab：由一个或多个页承载</text>
+<path d="M550 253 V287" stroke="#697586" stroke-width="3"/><path d="M538 275 L550 289 L562 275" stroke="#697586" stroke-width="3" fill="none"/>
+<rect x="130" y="294" width="840" height="135" rx="14" fill="#e7f5ed" stroke="#63a681" stroke-width="2"/>
+<text x="550" y="324" font-family="sans-serif" font-size="22" text-anchor="middle" fill="#20563a" font-weight="700">object：按缓存对象大小切分</text>
+<g fill="#fff" stroke="#63a681" stroke-width="2">
+<rect x="170" y="346" width="105" height="58" rx="7"/><rect x="285" y="346" width="105" height="58" rx="7"/><rect x="400" y="346" width="105" height="58" rx="7"/><rect x="515" y="346" width="105" height="58" rx="7"/><rect x="630" y="346" width="105" height="58" rx="7"/><rect x="745" y="346" width="105" height="58" rx="7"/><rect x="860" y="346" width="70" height="58" rx="7"/>
+</g>
+<g font-family="sans-serif" font-size="17" text-anchor="middle" fill="#20563a"><text x="222" y="381">obj</text><text x="337" y="381">obj</text><text x="452" y="381">obj</text><text x="567" y="381">obj</text><text x="682" y="381">obj</text><text x="797" y="381">obj</text><text x="895" y="381">...</text></g>
+<text x="550" y="476" font-family="sans-serif" font-size="18" text-anchor="middle" fill="#475467">kmem_cache 管理一类对象；sheaf 缓存对象指针，不替代 slab</text>
+</svg>

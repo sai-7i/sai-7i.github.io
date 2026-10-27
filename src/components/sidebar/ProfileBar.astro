@@ -33,7 +33,7 @@ const currentPath = Astro.url.pathname;
             {item.subItems ? (
               <details class="menu-item w-full" data-submenu-id={item.id} open={currentPath.startsWith(item.href)}>
                 <summary class="justify-center lg:justify-start items-center text-center text-xl md:text-3xl lg:text-xl font-bold p-4 hover:bg-base-200 rounded-lg">
-                  <Icon name={item.svg} />
+                  {item.svg && <Icon name={item.svg} />}
                   <span class="hidden lg:inline ml-2">{item.text}</span>
                 </summary>
                 <ul class="rounded-lg">
@@ -48,8 +48,7 @@ const currentPath = Astro.url.pathname;
                         aria-label={subItem.text}
                         aria-current={currentPath === subItem.href ? "page" : undefined}
                       >
-                        <Icon name={subItem.svg} />
-                        <span class="hidden lg:inline ml-2">{subItem.text}</span>
+                        {subItem.svg && <Icon name={subItem.svg} />}
                       </a>
                     </li>
                   ))}
@@ -65,7 +64,7 @@ const currentPath = Astro.url.pathname;
                 aria-label={item.text}
                 aria-current={currentPath === item.href ? "page" : undefined}
               >
-                <Icon name={item.svg} />
+                {item.svg && <Icon name={item.svg} />}
                 <span class="hidden lg:inline ml-2">{item.text}</span>
               </a>
             )}
@@ -88,7 +87,7 @@ const currentPath = Astro.url.pathname;
                 rel="noopener noreferrer"
                 class="btn btn-circle btn-ghost"
               >
-                <Icon name={icon.svg} class="text-xl" />
+                {icon.svg && <Icon name={icon.svg} class="text-xl" />}
               </a>
             </div>
           ))
