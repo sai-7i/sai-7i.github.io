@@ -7,8 +7,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 
 <BaseLayout title="About">
   <MainCard
-    title="关于我"
-    description="hyk (sai-7i) — 二进制安全、CTF 与工具控。"
+    title="About"
+    description="我受够了繁文缛节！"
+    image="/image/hero.jpg"
     textOverlay="ABOUT"
     infoIcon="lucide:user"
   >
@@ -19,13 +20,13 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           <div
             class="w-32 h-32 md:w-40 md:h-40 rounded-xl ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden"
           >
-            <img src="/profile.png" alt="hyk" width="160" height="160" loading="eager" />
+            <img src="/profile.jpg" alt="hyk" width="160" height="160" loading="eager" />
           </div>
         </div>
 
         <div class="flex-1 text-center md:text-left">
           <h2 class="text-3xl md:text-4xl font-bold mb-2">hyk</h2>
-          <p class="text-xl text-base-content/80 mb-4">Binary Security & CTF</p>
+          <p class="text-xl text-base-content/80 mb-4">Binary Security & Linux</p>
 
           <div class="flex flex-wrap gap-3 justify-center md:justify-start mb-6">
             <a
@@ -44,7 +45,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           </div>
 
           <p class="text-base-content/80">
-            我是 hyk，网名 sai-7i。主要方向是二进制安全：CTF 里的 pwn 和 reverse，偶尔也看看 web。喜欢把做题过程整理成可复现的笔记——包括走不通的尝试，因为踩过的坑往往比结论更有用。
+            各位师傅能来看我的博客，实属在下幸事，通过 QQ 3377256183 联系我，一起交流进步
           </p>
         </div>
       </section>
@@ -66,20 +67,15 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           <span>常用技术栈</span>
         </h2>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
           {
             [
-              { name: "Python", icon: "simple-icons:python", color: "oklch(0.7 0.2 250)" },
               { name: "C", icon: "simple-icons:c", color: "oklch(0.6 0.2 240)" },
-              { name: "C++", icon: "simple-icons:cplusplus", color: "oklch(0.6 0.2 240)" },
               { name: "Linux", icon: "simple-icons:linux", color: "oklch(0.8 0.2 80)" },
-              { name: "Bash", icon: "simple-icons:gnubash", color: "oklch(0.7 0.2 140)" },
+              { name: "Python", icon: "simple-icons:python", color: "oklch(0.7 0.2 250)" },
+              { name: "Shell", icon: "simple-icons:gnubash", color: "oklch(0.7 0.2 140)" },
               { name: "Git", icon: "simple-icons:git", color: "oklch(0.7 0.2 30)" },
               { name: "Docker", icon: "simple-icons:docker", color: "oklch(0.6 0.2 230)" },
-              { name: "Astro", icon: "simple-icons:astro", color: "oklch(0.5 0.2 300)" },
-              { name: "TypeScript", icon: "simple-icons:typescript", color: "oklch(0.6 0.2 250)" },
-              { name: "Vue", icon: "simple-icons:vuedotjs", color: "oklch(0.7 0.2 160)" },
-              { name: "FastAPI", icon: "simple-icons:fastapi", color: "oklch(0.7 0.2 180)" },
               { name: "SQLite", icon: "simple-icons:sqlite", color: "oklch(0.6 0.2 220)" },
             ].map((tech) => (
               <div class="flex flex-col items-center justify-center p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">

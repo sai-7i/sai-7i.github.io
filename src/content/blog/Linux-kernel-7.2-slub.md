@@ -2,11 +2,10 @@
 badge: Pin
 categories:
 - Kernel
-description: kmem_cache_cpu 缓存消失，sheaf 取而代之
+description: slub将cpu缓存改为sheaf 
 image: /image/image1.webp
 pubDate: Oct 26 2026
 tags:
-- pwn
 - kernel
 - linux
 title: Linux kernel 7.2 slub 分析
@@ -26,7 +25,7 @@ title: Linux kernel 7.2 slub 分析
 
 内核为每个物理页维护相应的页面描述符 `page`，用来记录这一页的管理元数据。
 
-源码：[Linux v6.18 struct page](https://github.com/torvalds/linux/blob/v6.18/include/linux/mm_types.h)
+源码：[Linux v6.18 struct page](https://elixir.bootlin.com/linux/v6.18.6/C/ident/page)
 
 为了方便理解，可以把它简化成这样：
 
@@ -54,12 +53,12 @@ struct page {
         // 其他页面管理场景对应的字段
     };
 
-    // 实际源码还包含其他联合体、引用计数、
-    // 映射计数等字段，具体布局以 6.18 源码为准
+    // 描述符还承载 _flags、_refcount、_mapcount
+    // 以及若干按场景复用的联合体成员
 };
 ```
 
-也就是说，我们不能简单地通过读取 `struct page` 就直接得到物理地址。`struct page` 记录的是页面的管理信息；内核还需要结合 PFN（页框号）以及相应的地址转换关系，才能定位对应的物理页。页面描述符通常也不存放在它所描述的那一页数据里面。
+`struct page` 记录的是页面的管理信息。把一个对象指针换算成物理页，内核走的是 `virt_to_page()` → PFN → `page_to_phys()` 这条链：先由虚拟地址得到页框号，再按架构的地址转换关系算出物理地址。页面描述符本身集中存放在 `vmemmap` 区域，与它所描述的页数据分开。
 
 一次性管理一个或多个页面的抽象，叫做 `folio`，`folio` 的出现大大简化了管理多页的麻烦。
 
@@ -91,14 +90,15 @@ struct page *page = alloc_pages(GFP_KERNEL, 2);
 - `slab`：承载对象的页面内存。
 - `object`：真正被分配给调用方使用的小对象。
 
-如果一个页面被用于slab管理，那么内核会通过 `struct slab`
-的视图访问相应的描述符信息。`struct slab` 与 `struct page`
-共享底层描述符的存储空间，是针对不同用途的两种视图；并不是把一份
-`struct page` 搬走，再额外创建一份
-`struct slab`。也不是每个page都会成为slab页。
+如果一个页面被用于slab管理，内核就通过 `struct slab`
+这个视图访问它的描述符。`struct slab` 与 `struct page`
+共用同一块描述符存储（`struct slab` 用联合体复用 `struct page`
+的字段），两者是同一份描述符针对不同用途的两种视图。被 SLUB
+接管的页在页标志里带 `PG_slab`，`page_slab()` 据此把描述符当作
+`struct slab` 使用。
 
 源码：[Linux v6.18
-`mm_types.h`](https://github.com/torvalds/linux/blob/v6.18/include/linux/mm_types.h)
+`mm_types.h`](https://elixir.bootlin.com/linux/v6.18.6/source/mm/slab.h#L52)
 
 #### freelist
 
@@ -110,8 +110,13 @@ struct page *page = alloc_pages(GFP_KERNEL, 2);
 
 ![SLUB 对象的组织方式](images/buddy-slub.svg)
 
-实际实现会受到内核版本、调试选项和freelist
-hardening等安全机制影响，因此不能简单地认为所有空闲对象里都一定存在一个明文的普通指针。
+空闲指针写在对象内部的哪个位置由 `s->offset` 决定：`set_freepointer()`
+把下一个空闲对象的地址写到 `object + s->offset`，`get_freepointer()`
+从这里读回来。打开 `CONFIG_SLAB_FREELIST_HARDENED` 时，写入的值要经
+`freelist_ptr_encode()` 与 `s->random`、该字段自身的地址一起编码，读回时由
+`freelist_ptr_decode()` 还原；打开 `CONFIG_SLAB_FREELIST_RANDOM` 时，新建
+slab 的 freelist 顺序被打乱。当 `s->offset >= s->inuse` 时（`freeptr_outside_object()`
+为真），空闲指针槽落在对象之外。
 
 #### kmem_cache_cpu
 
@@ -124,7 +129,7 @@ hardening等安全机制影响，因此不能简单地认为所有空闲对象�
 它维护当前CPU快速分配所需的状态，例如当前使用的slab和freelist。这样，分配器在常见情况下就不必每次都访问共享数据结构。
 
 ```c
-// 示意：从指定的缓存中申请一个对象
+// 从指定缓存申请一个对象
 void *obj = kmem_cache_alloc(cache, GFP_KERNEL);
 ```
 
@@ -140,29 +145,41 @@ void *obj = kmem_cache_alloc(cache, GFP_KERNEL);
 源码：[Linux v7.2
 `mm/slub.c`](https://github.com/torvalds/linux/blob/v7.2/mm/slub.c)
 
-这里的重点不是简单地把一个结构体换成另一个结构体，而是对象在CPU本地缓存、节点共享缓存以及底层slab之间的流转方式发生了变化。
+新版把批量指针缓存放到了分配路径的前端：对象在 CPU 本地 sheaf、节点 barn
+与底层 slab 之间流转，`kmem_cache_cpu` 的职责由 per-CPU sheaf 结构接替。
 
 #### sheaf
 
-sheaf可以理解成"一捆对象"。它缓存的是对象指针，而不是把对象的内容复制到sheaf内部。对象本身仍然位于slab管理的内存中。
+sheaf可以理解成"一捆对象"。它缓存的是对象指针；对象本身仍然位于slab管理的内存中，sheaf只记录指向它们的地址。
 
 ![新版 SLUB：sheaf 与 barn](images/slub-sheaf-barn.svg)
 
 在源码中，`struct slab_sheaf`
-用于描述sheaf。它包含缓存关联信息、当前对象数量以及对象指针数组等内容。下面只保留关键概念，字段布局请以v7.2源码为准：
+用于描述sheaf：
 
 ```c
-// 示意代码，不是内核源码的完整定义
 struct slab_sheaf {
-    struct kmem_cache *cache; // 对应的对象缓存
-    unsigned int size;        // 当前保存的对象数量
-    void *objects[];          // 对象指针数组
+    union {
+        struct rcu_head rcu_head;   // kfree_rcu 路径上排队用
+        struct barn_list barn_list; // 挂在 barn 链表上时
+        struct llnode llnode;       // 批量处理时的链节点
+        struct {
+            unsigned int capacity;
+            bool pfmemalloc;
+        };
+    };
+    struct kmem_cache *cache;       // 这捆指针所属的缓存
+    unsigned int size;              // 已装入的指针个数
+    int node;                       // 所属 NUMA 节点
+    void *objects[];                // 对象指针数组
 };
 ```
 
+头部占32字节，后面紧跟`objects[]`，`capacity`记录这捆能装多少指针，`s->sheaf_capacity`给出这个上限。
+
 例如，一个sheaf可以容纳一批对象指针。后续申请对象时，分配器可以优先从本地sheaf中取用，减少频繁进入共享路径的开销。
 
-这并不意味着传统SLUB完全没有批量处理能力，而是新版实现把批量对象缓存作为组织分配路径的重要方式。
+传统SLUB的批量处理集中在`kmem_cache_alloc_bulk()`与`kmem_cache_free_bulk()`这类接口上；新版把这套批量指针缓存提到了每次分配与释放都会经过的位置，sheaf就是它的载体。
 
 #### barn
 
@@ -177,258 +194,199 @@ struct slab_sheaf {
 - empty sheaf：当前没有可用对象指针，可以重新填充。
 - barn：在共享范围内协调这些sheaf。
 
-这里的full和empty描述的是sheaf中对象指针的状态，不是slab的状态。
-
 #### 分配流程
 
-假设内核调用：
+分配入口是 `kmem_cache_alloc()` → `slab_alloc_node()`：先过 memcg 记账、kfence 与调试 hook，然后交给 `alloc_from_pcs()` 从 per-CPU sheaf 取值，取不到才进 `___slab_alloc()` 慢路径。
 
 ```c
-void *obj = kmem_cache_alloc(cache, GFP_KERNEL);
+if (unlikely(pcs->main->size == 0)) {
+	pcs = __pcs_replace_empty_main(s, pcs, gfp, alloc_flags);
+	if (unlikely(!pcs))
+		return NULL;
+}
+
+object = pcs->main->objects[pcs->main->size - 1];
+pcs->main->size--;
 ```
 
-新版设计下，可以先检查本地sheaf。如果有可用对象，就直接取出；如果本地缓存不足，就尝试获取或补充sheaf；再不足时，才进入底层slab分配路径，必要时向Buddy申请物理页。
+`__pcs_replace_empty_main()` 依次试两种做法：spare 里有指针就与 main 对调；没有就从 barn 的 `sheaves_full` 换一捆满的回来。两处都落空时返回 NULL，由 `___slab_alloc()` 补货。
 
-![新版 SLUB：sheaf 与 barn](images/slub-sheaf-barn.svg)
+补货由 `refill_objects()` 完成：从节点 partial 链表上摘 slab，把页上的空闲指针搬进 sheaf 的 `objects[]`；partial 链表空了就 `new_slab()` 向伙伴系统要页。
 
-这是一种逻辑上的概括，不代表每次分配都严格经过全部步骤。实际路径还会受到分配标志、缓存配置、调试选项和内存状态等因素影响。
+`kmem_cache_alloc_bulk()` 对应 `alloc_from_pcs_bulk()`，一次从 sheaf 里搬出多个指针。分配侧与释放侧在同一个下标上对接：释放从 `objects[size]` 往里压，分配从 `objects[size - 1]` 往外弹，两端都不需要移动其它指针。
 
 #### 释放流程
 
-释放对象时，`kfree()` 或 `kmem_cache_free()`
-会把对象交还给对应的分配器。对象可能先进入本地缓存，也可能走其他回收路径，具体取决于缓存状态和内核实现。
-
-需要注意的是，释放一个对象并不意味着它所在的物理页会立即归还Buddy。一个slab中可能仍有其他正在使用的对象，只有满足相应回收条件时，底层页面才可能被释放。
-
-从PWN的角度看，需要区分三个状态：
-
-1. 对象是否已经释放。
-2. 对象所在的slab是否仍然存在。
-3. 底层物理页是否已经归还Buddy。
-
-这三个状态不能混为一谈。
-
-### 从PWN的角度看
-
-传统SLUB会利用空闲对象空间维护freelist，因此在分析UAF、越界写等漏洞时，需要考虑对象释放之后是否会被分配器重新利用，以及空闲对象中的管理数据是否可能受到影响。
-
-sheaf的引入，则意味着对象指针可以先被集中缓存，不一定在每次分配和释放时都立即回到底层slab的空闲对象管理路径。因此，研究新版内核时，还需要关注本地sheaf何时填充、耗尽、归还，以及barn如何协调共享缓存。
-
-但不能简单地得出"sheaf让漏洞更容易利用"或者"sheaf让旧利用方式全部失效"的结论。具体影响必须结合目标内核版本、配置、对象缓存和真实分配路径进行分析。
-
-### kmalloc-XX：这些缓存到底是什么？
-
-前面讲了 `kmem_cache`，这里再具体看看经常在内核调试和PWN中遇到的
-`kmalloc-96`、`kmalloc-128` 等缓存。
-
-`kmalloc(size, flags)`
-的调用者通常只指定需要多少字节，并不需要自己挑选缓存。内核会根据请求大小，选择合适的通用
-`kmalloc` size class。
-
-例如，在常见的64位配置下，可能会看到
-`kmalloc-8`、`kmalloc-16`、`kmalloc-32`、`kmalloc-64`、`kmalloc-96`、`kmalloc-128`、`kmalloc-192`、`kmalloc-256`
-等缓存。并不是所有类别在所有架构、配置和内核版本中都一定存在。
-
-![常见 kmalloc size class](images/kmalloc-size-classes.svg)
-
-假设某个调用请求80字节，分配器会选择能够容纳这个请求的缓存，常见情况下就是
-`kmalloc-96`。如果请求变成97字节，就不能继续放入96字节的对象，需要选择更大的类别，例如
-`kmalloc-128`。
-
-这就是为什么 `kmalloc-96`
-这样的缓存很重要：它不是专门给某个结构体使用的，而是为一批大小落在这个范围内的动态分配请求提供对象。
-
-源码可以重点看：
-
-- [`include/linux/slab.h`](https://github.com/torvalds/linux/blob/v7.2/include/linux/slab.h)：`kmalloc()`
-  相关定义和大小索引逻辑。
-- [`mm/slab_common.c`](https://github.com/torvalds/linux/blob/v7.2/mm/slab_common.c)：通用
-  kmalloc cache 的创建与初始化。
-- [`mm/slub.c`](https://github.com/torvalds/linux/blob/v7.2/mm/slub.c)：SLUB
-  的具体分配和释放实现。
-
-#### `kmalloc-96` 是不是一个专用结构体缓存？
-
-不是。名字里的 `96`表示这个缓存中对象的大小类别，不表示这个缓存专门保存某个名为96的结构体。
-
-很多不同的内核调用都可能申请96字节以内的内存，只要它们走的是通用
-`kmalloc()` 路径，最终就可能落到相同的 size class。反过来，同一个结构体也可能因申请大小不同而落入不同的缓存，或者因为它使用了专用
-`kmem_cache` 而根本不走通用 `kmalloc-XX` 缓存。
-
-这里还有一个细节：内核可能合并大小和属性兼容的专用缓存；编译配置、架构对齐、内存控制组以及调试选项也可能影响最终结果。所以分析具体机器时，不能只凭结构体名称猜缓存。
-
-### 每个 kmem_cache 都分配哪些结构？
-
-这个问题在内核堆利用中很常见，但需要先纠正一个容易产生的误解：**并不存在一张对所有内核都固定的"每个kmalloc-XX 对应哪些结构体"的表。**
-
-原因是两类缓存需要分开看：
-
-1. **通用 kmalloc 缓存**：例如
-   `kmalloc-96`。它按申请大小接收不同类型的对象。
-2. **专用对象缓存**：例如 `dentry`、`task_struct`
-   等类型可能使用专门创建的
-   `kmem_cache`，对象的分配路径由具体子系统决定。
-
-![结构体分配如何选择缓存](images/kmalloc-object-routing.svg)
-
-下面列几个研究内核时常见的例子。
-
-  -------------------------------------------------------------------------------------------------------------------------------------------
-
-  对象或类型              常见分配方式                                         需要注意的地方
-
-  ----------------------- ---------------------------------------------------- --------------------------------------------------------------
-
-  `msg_msg`               `kmalloc(sizeof(*msg) + alen, GFP_KERNEL_ACCOUNT)`   申请大小包含结构体头部和一部分消息正文，因此会随消息长度变化
-                          一类的动态大小申请                                   
-
-  `msg_msgseg`            `kmalloc(sizeof(*seg) + alen, GFP_KERNEL_ACCOUNT)`   用于较长消息的后续分段，段大小也会影响最终分配路径
-                          一类的动态大小申请                                   
-
-  `msg_queue`             新建消息队列时通过按对象大小分配的接口申请           不能因为它属于消息队列子系统，就认为它与 `msg_msg`
-                                                                               一定来自同一个缓存
-
-  `task_struct`           通常由任务结构体对应的专用缓存管理                   不应直接归入某个通用 `kmalloc-XX` 类别
-
-  `dentry`                目录项缓存                                           是专用缓存的典型例子
-
-`inode`                 inode 相关缓存，具体还与文件系统有关                 不同 inode 类型可能走不同缓存或分配路径
--------------------------------------------------------------------------------------------------------------------------------------------
-
-表中的分配方式用于说明机制；如果要精确确定某个版本的对象落在哪个缓存，仍然要跟进该版本的实际调用链、编译配置和结构体大小。
-
-### 以 msg_msg 为例
-
-`msg_msg` 是 System V
-消息队列中的消息头。它很适合用来理解为什么不能把"结构体类型"和"kmalloc-XX"简单地一一对应。
-
-定义可以在
-[`include/linux/msg.h`](https://github.com/torvalds/linux/blob/v7.2/include/linux/msg.h)
-中找到。简化后，它大致包含：
+`kfree()` 与 `kmem_cache_free()` 都收敛到 `slab_free()`：先过 memcg 记账与调试 hook，再把对象交给 `free_to_pcs()` 压入 per-CPU sheaf；压不进去才走 `__slab_free()`。
 
 ```c
-struct msg_msg {
-    struct list_head m_list;
-    long m_type;
-    size_t m_ts;          // 消息正文长度
-    struct msg_msgseg *next;
-    void *security;
+if (!local_trylock(&s->cpu_sheaves->lock))
+	return false;
 
-    // 结构体后面紧接着一部分消息正文
+pcs = this_cpu_ptr(s->cpu_sheaves);
+
+if (unlikely(pcs->main->size == s->sheaf_capacity)) {
+	pcs = __pcs_replace_full_main(s, pcs, allow_spin);
+	if (unlikely(!pcs))
+		return false;
+}
+
+pcs->main->objects[pcs->main->size++] = object;
+local_unlock(&s->cpu_sheaves->lock);
+```
+
+写指针指向下标 `size`，从尾部追加。main sheaf 因此是一个 LIFO 栈：同一个 CPU 上最后释放的对象，最先被再次分配出去。
+
+main 写满后由 `__pcs_replace_full_main()` 换一捆：
+
+1. spare 有空位：`swap(pcs->main, pcs->spare)`。per-CPU 结构就是 main 与 spare 两捆，spare 专门吸收这种情况。
+2. spare 也满了：`barn_replace_full_sheaf()` 把满的 main 挂进本节点 barn 的 `sheaves_full`，从 `sheaves_empty` 取一捆空的回来。barn 的满 sheaf 已经到上限时，直接把这捆里的指针倒回 slab，sheaf 本身留着给 main 用。
+3. barn 里没有空 sheaf：`alloc_empty_sheaf()` 现场 `kmalloc` 一捆裸指针数组，`sheaf_try_flush_main()` 把 main 里的对象分批倒回 slab。
+
+倒回 slab 的做法是：每批最多 32 个指针先拷到栈上，放锁之后再调 `__kmem_cache_free_bulk()`。
+
+![SLUB 分配与回收经过的层次](images/slub-7-flow.svg)
+
+#### 把对象还给 slab
+
+`__kmem_cache_free_bulk()` 先把属于同一个 slab 的对象串成一段 freelist，再交给 `__slab_free()`：
+
+```c
+old.freelist = slab->freelist;
+old.counters = slab->counters;
+
+was_full = (old.freelist == NULL);
+
+set_freepointer(s, tail, old.freelist);
+new.freelist = head;
+new.counters = old.counters;
+new.inuse -= cnt;
+
+slab_update_freelist(s, slab, &old, &new, "__slab_free");
+```
+
+`slab_update_freelist()` 用一次 `cmpxchg_double` 同时替换 freelist 与 counters，失败就重新取快照再试。之后只有两种情况需要动节点链表：
+
+- `was_full` 为真：slab 从满变成有空闲，把它挂到本节点 partial 链表的尾部。
+- `new.inuse` 归零：slab 里没有在用对象了。partial 链表的长度达到 `min_partial` 时，把它摘下来交给 `discard_slab()` 还给伙伴系统；长度不够时，这个空 slab 继续留在 partial 链表上当备货。
+
+`min_partial` 按对象大小算出，落在 5 到 10 之间（`ilog2(s->size) / 2` 再夹到这段区间），可以在 `/sys/kernel/slab/<cache>/min_partial` 读写。
+
+整条释放链路上，`slab->inuse` 只在 `__slab_free()` 里减少。对象指针停在 sheaf 里的这段时间，它所属的 slab 仍然按已分配记账，页面不会被回收。回收因此分成两层：对象先进入 sheaf，页面要等 sheaf 里的指针倒回 slab、`inuse` 归零、并且 partial 链表已经够长，才回到伙伴系统。
+
+#### 哪些对象绕过 sheaf
+
+`can_free_to_pcs()` 看两件事：slab 所在节点是不是当前 CPU 的本地节点（`numa_mem_id()`），以及 slab 有没有 `pfmemalloc` 标记。远端节点的对象进入本地 sheaf 会把远端页面长期钉在缓存里，`pfmemalloc` slab 上的对象另有用途，这两类都直接走 `__slab_free()`。
+
+`sheaf_capacity` 为 0 的缓存整条 sheaf 通道关闭：`CONFIG_SLUB_TINY`、带 `SLAB_DEBUG_FLAGS`（`slub_debug` 打开）、带 `SLAB_NO_SHEAVES`、带 `SLAB_NOLEAKTRACE`（kmemleak 自己的对象缓存），以及启动阶段的 bootstrap 缓存。`local_trylock()` 失败时同样退回 slab 路径。
+
+#### 批量释放与 kfree_rcu
+
+`kmem_cache_free_bulk()` 走 `free_to_pcs_bulk()`：先按 `can_free_to_pcs()` 分出本地与远端两堆，本地对象分批压入 sheaf，远端对象留到最后统一处理。
+
+`kfree_rcu()` 用单独一捆 sheaf 暂存对象：攒满后挂上 `call_rcu()`，宽限期结束再把整捆交给 barn 复用；barn 满了就把里面的指针倒回各自 slab。
+
+#### sheaf 的容量
+
+`sheaf_capacity` 在缓存创建时算出来，先按对象大小取初值：
+
+| `s->size` | 初值 |
+| --------- | ---- |
+| ≥ 4KB     | 4    |
+| ≥ 1KB     | 12   |
+| ≥ 256B    | 26   |
+| 其它      | 60   |
+
+再把「头部 32 字节 + capacity 个指针」的总字节数向上取到最近的 kmalloc 档位，反推最终容量。`kmalloc-96` 这一档：初值 60，`32 + 60 * 8 = 512` 正好是一个 kmalloc 档位，容量定在 60。对象大小 256 的缓存：初值 26，`32 + 26 * 8 = 240` 向上取到 256，容量变成 `(256 - 32) / 8 = 28`。
+
+sheaf 自身也是一次普通 `kmalloc`，空 sheaf 用 `kfree` 归还。容量可以在 `/sys/kernel/slab/<cache>/sheaf_capacity` 读到。
+
+#### barn 的内部结构
+
+barn 是「每个缓存 + 每个 NUMA 节点」一个的共享池：
+
+```c
+struct node_barn {
+	spinlock_t lock;
+	struct list_head sheaves_full;
+	struct list_head sheaves_empty;
+	unsigned int nr_full;
+	unsigned int nr_empty;
 };
 ```
 
-这里的关键是：消息正文并不是一个独立的固定大小数组，而是紧跟在结构体后面。创建消息时，内核会根据消息长度计算本次需要申请的字节数。
+`sheaves_full` 上挂着装满对象指针的 sheaf，供给耗尽的 CPU；`sheaves_empty` 上挂着空 sheaf，供给写满的 CPU。两个方向各有一个交换接口：`barn_replace_empty_sheaf()` 用空的换满的，`barn_replace_full_sheaf()` 用满的换空的。`nr_full` 与 `nr_empty` 各自的上限是 10（`MAX_FULL_SHEAVES` / `MAX_EMPTY_SHEAVES`），超出的满 sheaf 就地倒回 slab，超出的空 sheaf 直接 `kfree`。
 
-![msg_msg 与 msg_msgseg 的内存布局](images/msg-msg-layout.svg)
+barn 属于节点，一个节点上的所有 CPU 共用这一批 sheaf。CPU 下线、`kmem_cache_shrink()`、缓存销毁都会调用 `pcs_flush_all()`，把每个 per-CPU 的 main 与 spare 倒回 slab。
 
-因此，实际申请大小可以理解为：
+### kmalloc 的尺寸档
+
+读取 /proc/slabinfo 的部分字段
+
+![slabinfo 中的字段](images/slab.png)
+
+`kmalloc(size, flags)` 只接受字节数，具体缓存由内核查表决定：
 
 ```c
-// 示意：首段申请大小由结构体头部和正文长度共同决定
-size_t alen = min(len, DATALEN_MSG);
-msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL_ACCOUNT);
+static inline struct kmem_cache *
+kmalloc_slab(size_t size, kmem_buckets *b, gfp_t flags, kmalloc_token_t token,
+	     unsigned int alloc_flags)
+{
+	unsigned int index;
+	enum kmalloc_cache_type type = kmalloc_type(flags, token);
+	...
+	if (!b)
+		b = &kmalloc_caches[type];
+	if (size <= 192)
+		index = kmalloc_size_index[size_index_elem(size)];
+	else
+		index = fls(size - 1);
+
+	return (*b)[index];
+}
 ```
 
-如果目标架构下 `sizeof(struct msg_msg)`
-为48字节，并且首段正文长度在1到48字节之间，那么申请总大小就在49到96字节之间。在常见的、启用了96字节
-size class 的配置中，这类申请就可能进入 `kmalloc-96`。
+`size_index_elem(bytes)` 是 `(bytes - 1) / 8`，8~192 字节这一段按 8 字节步进查 `kmalloc_size_index[24]`；超过 192 字节直接用 `fls(size - 1)` 得到 2 的幂档位。
 
-但这不是说"`msg_msg` 就属于
-`kmalloc-96`"。消息更长时，首段大小会变化，后续还可能分配一个或多个
-`msg_msgseg`；不同分配的请求大小可能进入不同类别，甚至走不同的底层分配路径。
+64 位、4KB 页下的档位是 8、16、32、64、96、128、192、256、512、1K、2K、4K、8K。96 与 192 夹在 2 的幂之间，用来减少内部碎片。请求 80 字节 → `kmalloc_size_index[9]` = 1 → `kmalloc-96`；请求 97 字节 → `kmalloc_size_index[12]` = 7 → `kmalloc-128`。
 
-此外，`sizeof(struct msg_msg)`、`DATALEN_MSG`
-和具体缓存类别都应以目标内核的实际源码与架构为准，不要把某个 x86-64
-配置下的数值直接套到所有机器上。
+`KMALLOC_MAX_CACHE_SIZE` 等于 `PAGE_SIZE * 2`（4KB 页下是 8KB）。更大的请求由 `kmalloc_large()` 直接向伙伴系统要连续页，`kfree()` 用 `free_large_kmalloc()` 归还。
 
-### 如何确认某个对象实际来自哪个缓存？
+同一档位还会按 gfp 标志拆成几份缓存：
 
-对于 PWN 分析，最好把"根据大小推测"与"在目标环境中确认"分开。
+- `__GFP_RECLAIMABLE` → `kmalloc-rcl-96`
+- `__GFP_ACCOUNT`（`CONFIG_MEMCG`）→ `kmalloc-cg-96`
+- `__GFP_DMA`（`CONFIG_ZONE_DMA`）→ `dma-kmalloc-96`
+- `CONFIG_SLAB_OBJ_EXT` 下另有一份 `kmalloc-no-objext-96`，`CONFIG_KMALLOC_PARTITION_*` 下还有 15 份 `kmalloc-part-XX-96`
 
-第一步，先找到对象的分配调用。比如搜索 `kmalloc(`、`kmem_cache_alloc(`
-或者对应的封装宏，确认传入的是固定大小还是动态计算的大小。
+`kmalloc_type()` 的选择优先级是 `__GFP_DMA` > `__GFP_RECLAIMABLE` > `__GFP_ACCOUNT`。
 
-第二步，计算实际申请大小。对于 `msg_msg`，不能只计算
-`sizeof(struct msg_msg)`，还要把本次分配的正文长度算进去。
+![kmalloc 的尺寸档](images/kmalloc-size-classes.svg)
 
-第三步，确认目标内核的 size class。可以查看对应版本的
-`kmalloc_size_index`、`kmalloc_info` 和 `kmalloc_slab()`
-相关逻辑。不要只根据网上常见的缓存列表下结论。
+### 专用缓存与缓存合并
 
-第四步，在测试环境中查看实际 slab 状态：
+`kmem_cache_create()` 先调用 `__kmem_cache_alias()` → `find_mergeable()`，尺寸、对齐、标志都对得上的已有缓存会被直接复用：`size <= s->size` 且 `s->size - size < sizeof(void *)`，`SLAB_MERGE_SAME` 那几位一致，`(s->size & ~(align - 1)) == s->size`。带调试标志、`SLAB_TYPESAFE_BY_RCU`、`SLAB_NOLEAKTRACE`、构造函数或 usercopy 区域的缓存不参与合并。
 
-```bash
-# 查看当前系统统计的 slab 缓存
-cat /proc/slabinfo
+合并成功后，本次名字变成 sysfs 里的别名符号链接，`s->object_size` 与 `s->inuse` 取两者较大值，`kzalloc` 需要清零的字节数由此覆盖到调用者请求的长度。启动参数 `slab_nomerge` 或关闭 `CONFIG_SLAB_MERGE_DEFAULT` 会让全部缓存退出合并。
 
-# 查看 kmalloc-96 的详细属性（如果该缓存存在）
-ls /sys/kernel/slab/kmalloc-96/
+### 观察运行时状态
 
-# 查看可用的缓存名称
-ls /sys/kernel/slab/
-```
-
-`/proc/slabinfo` 和 sysfs
-适合确认运行中系统的缓存名称和统计信息，但它们通常不会直接告诉你"这个缓存里的每个对象都是什么
-C
-类型"。想把对象类型和缓存对应起来，仍然需要结合源码、分配调用点、调试信息或分配跟踪。
-
-如果启用了相应的 tracepoint，也可以观察
-`kmalloc`、`kfree`、`kmem_cache_alloc`
-等事件，进一步关联分配调用点和请求大小。可参考 [内核 kmem tracepoint
-文档](https://docs.kernel.org/trace/events-kmem.html)。
-
-### Linux 7.2 的 sheaf：比结构体更重要的是数据流
-
-前面已经介绍了 `sheaf` 和 `barn`
-的基本概念。这里再从数据流的角度把它们串起来。
-
-![Linux 7.2 SLUB 分配与回收层次](images/slub-7-flow.svg)
-
-新版设计中，本地 sheaf
-用于保存一批可供分配的对象指针；当本地缓存无法满足需求时，分配器可以与共享
-sheaf 机制协调。如果底层 slab
-中也没有足够对象，才可能继续申请新的物理页。
-
-因此，阅读源码时不能只看 `struct slab_sheaf`
-的字段，还应该沿着这些方向追踪：
-
-- sheaf 何时被创建、填充和消耗。
-- 本地 sheaf 不足时如何获取其他 sheaf。
-- 空 sheaf 和满 sheaf 如何在 barn 中组织。
-- 释放对象时，指针进入哪条回收路径。
-- slab 何时变成部分使用、完全空闲，以及何时可能归还 Buddy。
-
-#### `kmem_cache` 中值得关注的字段
-
-对比旧版结构时，可以优先关注 `struct kmem_cache`
-中与缓存组织相关的字段。新版实现包含 `cpu_sheaves`
-一类的本地缓存管理字段，也会记录对象大小、对齐、sheaf
-容量以及节点级管理信息。
-
-不要只因为字段名改变，就断言整个分配器的行为已经完全改变；需要把字段与读写它们的函数结合起来看。建议在目标版本源码中搜索：
-
-```bash
-# 在 Linux 源码根目录执行
-grep -nE 'struct slab_sheaf|struct node_barn|struct slub_percpu_sheaves' mm/slub.c
-grep -nE 'sheaf|barn' mm/slub.c
-grep -nE 'kmem_cache_alloc|kmem_cache_free|kmalloc_slab' mm/slub.c
-```
-
-上面的命令用于快速定位定义和引用。后续应沿着实际调用关系阅读，而不是仅凭名字推断执行流程。
+- `/proc/slabinfo`：每行 `name active_objs num_objs objsize objperslab pagesperslab`。`objsize` 是 `s->size`（含元数据），`objperslab` 是一个 slab 里的对象数。
+- `/sys/kernel/slab/<cache>/`：常用属性 `object_size`、`slab_size`、`objs_per_slab`、`order`、`sheaf_capacity`、`min_partial`、`aliases`。
+- `CONFIG_SLUB_STATS`：每档缓存下多出各条路径的命中计数，`alloc_fastpath`、`free_slowpath`、`barn_get`、`sheaf_flush` 这类名字直接对应上面走过的分支。
 
 ### 总结
 
-从page到SLUB，可以把内存管理过程串起来：
+对象在 SLUB 里的三层结构：
 
-- page / folio：描述和组织物理页。
-- Buddy：分配和回收物理页块。
-- slab：承载一批小对象。
-- object：分配给内核调用方使用的对象。
-- 传统SLUB：通过 `kmem_cache_cpu` 等机制加速本地分配。
-- 新版SLUB：通过sheaf缓存对象指针，并由barn等结构协调共享缓存。
+- `slab`：由伙伴系统给出的一到多页连续内存，切成等大的对象。
+- `sheaf`：一捆对象指针，per-CPU 两捆（`main` 与 `spare`），容量按对象大小取 4 / 12 / 26 / 60 后对齐到 kmalloc 档位。
+- `barn`：每个缓存、每个 NUMA 节点一个，`sheaves_full` 与 `sheaves_empty` 各上限 10 捆，在节点的 CPU 之间搬 sheaf。
 
-sheaf并没有取代slab，而是改变了SLUB缓存和流转对象的方式。
+分配走 `alloc_from_pcs()`：main sheaf 从尾部弹出一个指针，main 空了就与 spare 对调或从 barn 换满的，再不行就用 `refill_objects()` 从 partial 链表、最后从伙伴系统补货。
 
-对内核漏洞研究而言，真正需要关注的是对象的生命周期、复用时机，以及不同缓存层之间的交互。把物理页、slab、object和缓存机制这几个层次区分清楚，后续阅读SLUB源码、分析UAF和研究堆利用技术时，才不会把不同层次的状态混在一起。
+释放走 `free_to_pcs()`：main sheaf 从尾部压入一个指针，main 写满就与 spare 对调或从 barn 换空的，barn 到上限就把整捆倒回 slab。
+
+`slab->inuse` 只在 `__slab_free()` 里变化。对象指针停留在 sheaf 中时页面不会被回收；页面要等指针倒回 slab、`inuse` 归零、partial 链表又已经够长，才由 `discard_slab()` 还给伙伴系统。
+
+通用 `kmalloc` 的档位由 `kmalloc_size_index` 与 `fls(size - 1)` 决定，超过 `PAGE_SIZE * 2` 的请求交给伙伴系统；专用缓存在 `kmem_cache_create()` 时按尺寸、标志、对齐参与合并，合并后的别名出现在 sysfs 里。

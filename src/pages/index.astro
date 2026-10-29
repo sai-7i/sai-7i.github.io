@@ -14,7 +14,8 @@ const latestPosts = (await getPostsWithStats(sortedPosts)).slice(0, 3);
 <BaseLayout title="Home">
   <MainCard
     title="hyk's blog"
-    description="二进制安全、CTF 与工程踩坑笔记。"
+    description="二进制安全、linux kernel研究。"
+    image="/image/hero.jpg"
     textOverlay="HOME"
     infoIcon="lucide:info"
   >
@@ -25,10 +26,13 @@ const latestPosts = (await getPostsWithStats(sortedPosts)).slice(0, 3);
           <h2
             class="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-loose"
           >
-            👋 你好，我是 hyk
+            0x7c00
           </h2>
-          <p class="text-xl text-base-content/80 max-w-3xl mb-8">
-            二进制安全爱好者：CTF pwn、逆向分析、漏洞利用，也写点提高效率的小工具。这里是我的做题笔记与踩坑记录。
+          <p class="text-xl text-base-content/80 max-w-3xl mb-3">
+            爱意宽大是无限
+          </p>
+          <p class="mb-8 font-mono text-sm text-base-content/45">
+            $ whoami → binary security · linux kernel · exploit
           </p>
           <div class="flex flex-wrap gap-4 justify-center">
             <a href="/blog" class="btn btn-primary gap-2 btn-shine-effect">
@@ -47,50 +51,52 @@ const latestPosts = (await getPostsWithStats(sortedPosts)).slice(0, 3);
       <section class="py-6">
         <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
           <Icon name="lucide:sparkles" class="w-6 h-6 text-primary" />
-          <span>我在做什么</span>
+          <span>My World</span>
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <FeatureCard
-            title="CTF Pwn"
-            description="栈溢出、堆利用、ROP 链，glibc 版本差异与比赛复盘。"
-            icon="lucide:bug"
-            color="oklch(0.7 0.2 30)"
-          />
-
-          <FeatureCard
-            title="逆向分析"
-            description="IDA / Ghidra 静态分析，还原混淆逻辑与自定义虚拟机。"
+            title="二进制分析"
             icon="lucide:binary"
             color="oklch(0.65 0.2 280)"
+            tags={["elf", "ida", "ghidra", "pwntools"]}
           />
 
           <FeatureCard
-            title="Web 安全"
-            description="越权、注入、SSRF 一类的实战记录，以及白盒代码审计。"
-            icon="lucide:globe"
-            color="oklch(0.6 0.2 160)"
+            title="Linux"
+            icon="lucide:terminal"
+            color="oklch(0.8 0.18 80)"
+            tags={["syscall", "ebpf", "kernel module"]}
           />
 
           <FeatureCard
-            title="工具与脚本"
-            description="用 pwntools 和 Python 把重复劳动写掉，能自动化就自动化。"
-            icon="lucide:wrench"
+            title="CVE利用与渗透"
+            icon="lucide:shield-alert"
+            hoverIcon="lucide:crosshair"
+            color="oklch(0.62 0.22 25)"
+            tags={["cve", "exploit", "privilege escalation"]}
+          />
+
+          <FeatureCard
+            title="操作系统"
+            icon="lucide:cpu"
             color="oklch(0.6 0.2 200)"
+            tags={["scheduler", "mm", "interrupt"]}
           />
 
           <FeatureCard
-            title="工程实践"
-            description="Astro / Vue / FastAPI 搭小项目，顺手记录踩过的坑。"
-            icon="lucide:boxes"
-            color="oklch(0.8 0.2 80)"
+            title="AI 与 Agent"
+            icon="lucide:brain-circuit"
+            color="oklch(0.7 0.2 300)"
+            glow
+            tags={["llm", "agent", "rfc"]}
           />
 
           <FeatureCard
-            title="学习记录"
-            description="一次只学一个可验证的小单元，学完就写下来。"
-            icon="lucide:book-open"
+            title="Blog"
+            icon="lucide:compass"
             color="oklch(0.7 0.2 10)"
+            tags={["writeup", "notes"]}
           />
         </div>
       </section>

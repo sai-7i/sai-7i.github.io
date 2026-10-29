@@ -41,7 +41,7 @@ const currentPath = Astro.url.pathname;
                     <li class="relative">
                       <a
                         tabindex="0"
-                        class="menu-item text-base md:text-2xl lg:text-base font-bold p-2 hover:bg-base-200 rounded-lg"
+                        class="menu-item flex items-center gap-2 text-base md:text-2xl lg:text-base font-bold p-2 hover:bg-base-200 rounded-lg"
                         id={`header-${subItem.id}`}
                         href={subItem.href}
                         target={subItem.target || "_self"}
@@ -49,6 +49,7 @@ const currentPath = Astro.url.pathname;
                         aria-current={currentPath === subItem.href ? "page" : undefined}
                       >
                         {subItem.svg && <Icon name={subItem.svg} />}
+                        <span>{subItem.text}</span>
                       </a>
                     </li>
                   ))}

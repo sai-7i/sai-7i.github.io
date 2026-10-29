@@ -34,11 +34,6 @@ site:
           href: /blog
           svg: "material-symbols:ink-pen-outline-rounded"
           target: _self
-        - id: pwn
-          text: Pwn
-          href: /blog/category/Pwn
-          svg: "material-symbols:terminal-rounded"
-          target: _self
         - id: kernel
           text: Kernel
           href: /blog/category/Kernel
@@ -50,27 +45,17 @@ site:
           svg: "material-symbols:label-outline"
           target: _self
         # 子菜单项配置
-    - id: project
-      text: Project
-      href: /project
-      svg: "material-symbols:code-blocks-outline"
-      target: _self
     - id: friend
       text: Friend
       href: /friend
       svg: "material-symbols:supervisor-account-outline-rounded"
       target: _self
-    - id: contact
-      text: Contact
-      href: "https://github.com/sai-7i"
-      target: _self
-      svg: "material-symbols:attach-email-outline-rounded"
 
 # 用户的个人信息
 user:
   name: hyk # 用户名
   site: "https://sai-7i.github.io" # 用户的网站链接
-  avatar: /profile.png # 用户头像路径
+  avatar: /profile.jpg # 用户头像路径
   sidebar: # 侧边栏配置
     social: # 社交链接列表，留空则不显示
       - href: "https://github.com/sai-7i"

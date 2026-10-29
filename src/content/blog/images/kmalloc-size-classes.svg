@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570">
 <rect width="1200" height="570" rx="24" fill="#f7f8fa"/>
-<text x="600" y="48" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#202938" font-weight="700">常见 kmalloc size class（示意）</text>
+<text x="600" y="48" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#202938" font-weight="700">kmalloc 的尺寸档（64 位，4KB 页）</text>
 <text x="600" y="82" font-family="sans-serif" font-size="17" text-anchor="middle" fill="#667085">请求大小向上匹配到合适的缓存；实际可用类别取决于架构与配置</text>
 <g font-family="sans-serif" font-size="18" text-anchor="middle">
 <g fill="#e7eefb" stroke="#6d8fc7" stroke-width="2">
@@ -12,9 +12,9 @@
 <path d="M600 230 V270" stroke="#697586" stroke-width="3"/><path d="M588 258 L600 272 L612 258" stroke="#697586" stroke-width="3" fill="none"/>
 <rect x="125" y="285" width="950" height="95" rx="14" fill="#fff0dc" stroke="#d7a15a" stroke-width="2"/>
 <text x="600" y="322" font-size="23" fill="#714b18" font-weight="700">请求 80 字节 → kmalloc-96</text>
-<text x="600" y="353" font-size="18" fill="#714b18">请求 97 字节 → kmalloc-128（不是 kmalloc-96）</text>
+<text x="600" y="353" font-size="18" fill="#714b18">请求 97 字节 → size_index_elem(97)=12 → 下标 7 → kmalloc-128</text>
 <text x="600" y="425" font-size="18" fill="#475467">非 2 的幂大小类别（如 96、192）可减少部分内部碎片</text>
 <text x="600" y="460" font-size="18" fill="#475467">更大的请求继续匹配更大的缓存；超过 slab kmalloc 缓存范围时，可能走页分配路径</text>
-<text x="600" y="515" font-size="16" fill="#667085">这是常见配置下的示意，不应替代目标内核的 kmalloc_size_index 与配置检查</text>
+<text x="600" y="515" font-size="16" fill="#667085">档位由 kmalloc_size_index[size_index_elem(size)]（≤192B）与 fls(size-1)（>192B）决定；超过 8KB 走 kmalloc_large()</text>
 </g>
 </svg>

@@ -17,5 +17,5 @@
 <path d="M920 545 V570" stroke="#697586" stroke-width="3"/><path d="M908 558 L920 572 L932 558" stroke="#697586" stroke-width="3" fill="none"/>
 <rect x="780" y="575" width="280" height="48" rx="12" fill="#fff" stroke="#aab2bd" stroke-width="2"/>
 <text x="920" y="605" font-family="sans-serif" font-size="19" text-anchor="middle" fill="#202938">Buddy 页面分配</text>
-<text x="600" y="610" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#667085">逻辑示意；具体函数和分支以目标版本 v7.2 源码为准</text>
+<text x="600" y="610" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#667085">每个 CPU 两捆 sheaf（main + spare）；节点 barn 上 sheaves_full / sheaves_empty 各上限 10 捆；slab->inuse 只在 __slab_free() 里减少</text>
 </svg>
