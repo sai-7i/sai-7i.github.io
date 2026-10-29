@@ -1,0 +1,4 @@
+
+User-agent: *
+Allow: /
+Sitemap: https://sai-7i.github.io/sitemap-index.xml
