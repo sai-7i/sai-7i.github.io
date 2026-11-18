@@ -90,16 +90,14 @@ fake_IO_FILE += p64(stdout + 0x40) # 伪造的wide_data vtable
 
 printf 调用vtable中的_IO\_wfile_xsputn函数时产生错位，误入_IO\_wfile_seekoff并进入_IO_switch_to_wget_mode，调用wide_vtable的overflow，恰好执行了我们的setcontext gadget，恢复所有寄存器并进行ROP链的执行。
 
-![](/home/sai/.config/marktext/images/cd45f2b344a2aab19b84d8030559bca62f555359.png)
+![](images/house-of-cat-cd45f2b344a2aab19b84d8030559bca62f555359.png)
 
 顺便提一句，setcontext 恢复寄存器时的寻址依靠rdx，我们早已预知并在fake wide_data中布置
 
 这是较为复杂的orw方法，如果程序没有开启seccomp沙箱的话，完全可以将setcontext+61的gadget改为system，直接拿到shell
 
-![](/home/sai/.config/marktext/images/4238e03fb0eb3899552dac2d5f6251f6521fdf74.png)
+![](images/house-of-cat-fb67a9b2ea7027074285bed19e1417c4386dc386.png)
 
 我不知道FSOP这条路还能走多远，但有一点可以确认，那就是大多数小厂商宁愿冒着牺牲安全性的风险，也不愿对系统进行升级。我们学校的一些资产就是如此，让人痛心疾首却又无能为力。时代在发展，ai会催人进步，没有血流成河的惨剧，永远都不会构筑起更坚固的防线。
 
 ###### _Pwned by hyk_
-
-
