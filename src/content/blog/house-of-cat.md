@@ -34,23 +34,21 @@ title: House of Cat 利用
 
 先看结构_IO_FILE_plus，这也是stdout的结构体
 
-![](/home/sai/.config/marktext/images/9734cc8dca2ca307413d25d36dcbb7cf9702d894.png)
+![](images/house-of-cat-9734cc8dca2ca307413d25d36dcbb7cf9702d894.png)
 
 可以看到，偏移216，换算为16进制就是0xd8处，为vtable
 
 然后是这个FILE结构体，全称_IO_FILE
 
-![](/home/sai/.config/marktext/images/622a53f3a99a46a537727a8af9f02047d70d83f8.png)
+![](images/house-of-cat-622a53f3a99a46a537727a8af9f02047d70d83f8.png)
 
 其中有些非常重要的成员，如_wide_data、_IO_write_ptr这些
 
 _wide_data是我们要伪造的内容
 
-![](/home/sai/.config/marktext/images/fb67a9b2ea7027074285bed19e1417c4386dc386.png)
+![](images/house-of-cat-fb67a9b2ea7027074285bed19e1417c4386dc386.png)
 
 核心就在于改写其中的_wide_vtable字段，触发我们自己的函数或gadget。那你可能要问了，主播主播，为什么不直接更改_IO_FILE的vtable呢？因为_IO_FILE的vtable存在地址校验，只能放置到特定的地址范围内。诡异的是，_wide_data中却没有这一校验。话不多说直接开始构造。
-
-
 
 ```python
 fake_IO_FILE  = p64(0)
@@ -102,10 +100,6 @@ printf 调用vtable中的_IO\_wfile_xsputn函数时产生错位，误入_IO\_wfi
 
 我不知道FSOP这条路还能走多远，但有一点可以确认，那就是大多数小厂商宁愿冒着牺牲安全性的风险，也不愿对系统进行升级。我们学校的一些资产就是如此，让人痛心疾首却又无能为力。时代在发展，ai会催人进步，没有血流成河的惨剧，永远都不会构筑起更坚固的防线。
 
-
-
-Pwned by hyk
-
-
+###### _Pwned by hyk_
 
 
